@@ -7,3 +7,48 @@ fn sesh : true -> ~!a == !~a {
     let r = sesh(x) : ~!a == !~a;
     return sesh;
 }
+
+fn neq_to_sesh : !(a == b)  ->  !(a ~~ b) {
+    use modus_tollens;
+    use q_to_eq;
+
+    x : !(a == b);
+
+    let y = q_to_eq() : (a ~~ b) => (a == b);
+    let y2 = modus_tollens(y) : !(a == b) => !(a ~~ b);
+    let r = y2(x) : !(a ~~ b);
+    return r;
+}
+
+fn sesh_left : !(a ~~ a)  ->  !(a ~~ b) {
+    use modus_tollens;
+    use q_left;
+
+    x : !(a ~~ a);
+
+    let y = modus_tollens(q_left) : !(a ~~ a) => !(a ~~ b);
+    let r = y(x) : !(a ~~ b);
+    return r;
+}
+
+fn sesh_right : !(b ~~ b)  ->  !(a ~~ b) {
+    use modus_tollens;
+    use q_right;
+
+    x : !(b ~~ b);
+
+    let y = modus_tollens(q_right) : !(b ~~ b) => !(a ~~ b);
+    let r = y(x) : !(a ~~ b);
+    return r;
+}
+
+fn sesh_to_nsd : !(a ~~ a)  ->  !sd(a, a) {
+    use modus_tollens;
+    use sd_to_q;
+
+    x : !(a ~~ a);
+
+    let x2 = modus_tollens(sd_to_q) : !(a ~~ a) => !sd(a, a);
+    let r = x2(x) : !sd(a, a);
+    return r;
+}

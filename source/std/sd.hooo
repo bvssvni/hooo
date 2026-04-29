@@ -98,7 +98,7 @@ fn sd_eq_left : (a == b)^true -> sd(a, c) == sd(b, c) {
 
     let y = triv(sd_ty) : (sd' : prop' => prop' => prop');
     let x2 = tauto_cong_eq_left(sd_tauto_cong, y, x) : sd'(a, c) == sd'(b, c);
-    let r = sd_conv_eq_from(x2) : sd(a, c) == sd(b, c);    
+    let r = sd_conv_eq_from(x2) : sd(a, c) == sd(b, c);
     return r;
 }
 
@@ -155,13 +155,24 @@ fn sd_in_left_arg : sd(a, b) & (a == c)^true -> sd(c, b) {
 fn sd_in_right_arg : sd(a, b) & (b == c)^true -> sd(a, c) {
     use sd_symmetry;
     use sd_in_left_arg;
-    
+
     x : sd(a, b);
     y : (b == c)^true;
-    
+
     let x2 = sd_symmetry(x) : sd(b, a);
     let x3 = sd_in_left_arg(x2, y) : sd(c, a);
     let r = sd_symmetry(x3) : sd(a, c);
     return r;
 }
 
+fn sd_to_q : sd(a, a)  ->  a ~~ a {
+    use eq_refl;
+    use q_lift;
+    use triv;
+
+    x : sd(a, a);
+
+    let x2 = triv(eq_refl) : a == a;
+    let r = q_lift(x, x2) : a ~~ a;
+    return r;
+}
