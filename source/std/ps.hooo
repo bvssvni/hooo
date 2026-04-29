@@ -1,3 +1,5 @@
+grade ps_core [ps_core];
+
 use pord;
 
 /// Core axiom of Path Semantics.
