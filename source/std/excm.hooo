@@ -6,6 +6,8 @@ Formal expression `Excm'`
 
 sym Excm;
 
+grade exclusive_strength [excm_ex, excm];
+
 fn excm_to : Excm' -> all(a | !a) {
     axiom excm_to : Excm' -> all(a | !a);
     x : Excm';
@@ -114,28 +116,33 @@ fn excm_lift : (excm(a) => b) -> !!b {
     return r;
 }
 
+/// Excluded negation with exclusive-strength, no meta-strength.
+///
+/// A Logic that assumes this axiom is an Existental Logic (EL).
+///
+/// This is used when you only want to prove something
+/// for Existential Logic, but not using HOOO EP.
+///
+/// For HOOO EP, see `hooo_excm_ex`.
+///
+/// When you are uncertain what to do, add explicit assumptions.
 fn excm_ex : true -> excm(!a) {
-    use refl;
-    use hooo_or;
-    use excm_lift;
-    use excm_lift_neg;
-    use left;
-    use right;
+    use excm;
 
-    let x = refl() : excm(a) -> excm(a);
-    let x2 = hooo_or(x) : a^excm(a) | (!a)^excm(a);
-    lam f : a^excm(a) => excm(!a) {
-        y : a^excm(a);
-        let y2 = excm_lift(y) : !!a;
-        let r = right(y2) : excm(!a);
-        return r;
-    }
-    lam g : (!a)^excm(a) => excm(!a) {
-        y : (!a)^excm(a);
-        let y2 = excm_lift_neg(y) : !a;
-        let r = left(y2) : excm(!a);
-        return r;
-    }
-    let r = match x2 (f, g) : excm(!a);
+    x : true;
+
+    let r = excm(x) : excm(!a);
+    return r;
+}
+
+/// Excluded middle with exclusive-strength.
+///
+/// This is used when you only want to prove something
+/// for Classical Logic.
+fn excm : true -> excm(a) {
+    x : true;
+
+    axiom excm : true -> excm(a);
+    let r = excm(x) : excm(a);
     return r;
 }

@@ -1,0 +1,53 @@
+/// Excluded negation with meta-strength (HOOO EP), no exclusive-strength.
+///
+/// A Logic that assumes this axiom is an Existental Logic (EL).
+///
+/// This is used when you only want to prove something
+/// for HOOO EP, but not for Existential Logic in general.
+///
+/// For Existential Logic only, see `excm_ex`.
+///
+/// When you are uncertain what to do, add explicit assumptions.
+fn hooo_excm_ex : true -> excm(!a) {
+    use refl;
+    use hooo_or;
+    use excm_lift;
+    use excm_lift_neg;
+    use left;
+    use right;
+
+    let x = refl() : excm(a) -> excm(a);
+    let x2 = hooo_or(x) : a^excm(a) | (!a)^excm(a);
+    lam f : a^excm(a) => excm(!a) {
+        y : a^excm(a);
+        let y2 = excm_lift(y) : !!a;
+        let r = right(y2) : excm(!a);
+        return r;
+    }
+    lam g : (!a)^excm(a) => excm(!a) {
+        y : (!a)^excm(a);
+        let y2 = excm_lift_neg(y) : !a;
+        let r = left(y2) : excm(!a);
+        return r;
+    }
+    let r = match x2 (f, g) : excm(!a);
+    return r;
+}
+
+/// Excluded negation with both meta-strength and exclusive-strength.
+///
+/// A Logic that assumes this axiom is an Existental Logic (EL).
+///
+/// This is used when you want to prove something
+/// for HOOO EP and for Existential Logic at the same time.
+///
+/// See `excm_ex` and `hooo_excm_ex`.
+///
+/// When you are uncertain what to do, add explicit assumptions.
+fn meta_exclusive_excm_ex : true -> excm(!a) {
+    x : true;
+    use hooo_excm_ex;
+    use excm_ex;
+    let r = excm_ex(x) : excm(!a);
+    return r;
+}
