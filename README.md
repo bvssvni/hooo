@@ -219,7 +219,8 @@ let y      Theorem/variable
 return x                    Make a conclusion (safe)
 unsafe return x             Override safety (unsafe)
 
-sym foo;                    Declare a symbol `foo'`.
+sym foo;                    Declare a symbol `foo'`
+grade <name> [ ... ];       Theorem Grading (list of axioms)
 axiom foo : a               Introduce axiom `foo` of type `a`
 () : a                      Prove `a`, e.g. `() : true`
 f(x)                        Apply one argument `x` to `f`
@@ -436,6 +437,86 @@ fn sym_eq_refl : sym a  ->  a' == a' {
     return r;
 }
 ```
+
+### Theorem grading
+
+Hooo supports Theorem Grading, which is a feature to add "dimensions" of Sense to theorem proving.
+
+Theorem Grading can be used when you do not want to pass around commonly used assumptions as arguments.
+Instead, you use them as regular axioms, with a grade list:
+
+```text
+grade <name> [<axiom 1>, <axiom 2>, ...];
+```
+
+Here, Axiom 2 might be a stronger version of Axiom 1.
+
+All theorems that depend on graded axioms will be graded.
+Hooo will generate grade information in your "Hooo.config" file automatically.
+This information will also propagate to new projects that depend on your project.
+
+For example, in Hooo's standard library, there is a Theorem Grading of exclusive-strength:
+
+```text
+grade exclusive_strength [excm_ex, excm];
+```
+
+1. The axiom `excm_ex` is for Existential Logic (EL)
+2. The axiom `excm` is for Classical Logic (PL)
+
+When you work with explicit assumptions as arguments, you get a grade 0 in exclusive-strength.
+
+For example, a proof that uses explicit assumptions as arguments:
+
+```text
+fn or_from_de_morgan : !(a & b) & excm(a) & excm(b) -> !a | !b { ... }
+```
+
+Now, using this proof, one can use Theorem Grading:
+
+```text
+fn excm_or_from_de_morgan : !(a & b) -> !a | !b {
+    use excm; // <--- Here we use the axiom that gives exclusive-strength 2.
+    use triv;
+    use or_from_de_morgan;
+
+    x : !(a & b);
+
+    let z = triv(excm) : excm(a);
+    let z2 = triv(excm) : excm(b);
+    let r = or_from_de_morgan(x, z, z2) : !a | !b;
+    return r;
+}
+```
+
+In "Hooo.config", you will see the grade of `excm_or_from_de_morgan`:
+
+```text
+grades {
+    ...
+    exclusive_strength: {
+        1: [...];
+        2: [..., excm_or_from_de_morgan, ...];
+    };
+    ...
+}
+```
+
+Theorem Grading can get very complex to reason about, so be careful when you use it.
+
+For example, the axioms `excm_ex` and `hooo_excm_ex` are logically equivalent,
+but they use separate Theorem Grading of exclusive-strength and meta-strength respectively.
+Meta-strength 3 implies exclusive-strength 1, but when you are thinking about Existential Logic,
+you might not want theorems depending on exclusive-strength 1 to include meta-strength 3.
+This is because when you only assume `excm_ex`, you can not prove any of the basic axioms in meta-strength 1-3.
+
+Theorem Grading can be very powerful, but it is also subjective, which makes it harder to reason about.
+
+When Theorem Grading propagates to new projects, the information about the list of basic axioms is erased.
+Dependencies have enough information to perform the Theorem Grading properly, but how it actually works is hidden.
+This adds another layer of complexity, which often requires consulting the source code where the Theorem Grading is specified originally.
+
+You can read about the philosophy of Theorem Grading in [this blog post](https://advancedresearch.github.io/blog/2026-04-28-theorem-grading).
 
 ### Congruence
 
