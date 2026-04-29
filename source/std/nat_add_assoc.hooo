@@ -1,0 +1,8 @@
+use add;
+
+fn nat_add_assoc : true -> add'(a, add'(b, c)) == add'(b, add'(a, c)) {
+    x : true;
+
+    axiom r : add'(a, add'(b, c)) == add'(b, add'(a, c));
+    return r;
+}

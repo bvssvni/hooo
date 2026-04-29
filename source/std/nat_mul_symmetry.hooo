@@ -88,3 +88,10 @@ fn nat_mul_zero_left : (a : nat') -> mul'(z', a) == z' {
     return r;
 }
 
+fn nat_mul_symmetry : (a : nat') & (b : nat') -> mul'(a, b) == mul'(b, a) {
+    x : (a : nat') & (b : nat');
+
+    axiom nat_mul_symmetry : (a : nat') & (b : nat') -> mul'(a, b) == mul'(b, a);
+    let r = nat_mul_symmetry(x) : mul'(a, b) == mul'(b, a);
+    return r;
+}
