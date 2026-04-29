@@ -181,27 +181,26 @@ fn nqu_to_nsd : !~a  ->  !sd(a, a) {
 }
 
 fn qu_inv_to_nqu : ~!a  ->  !~a {
-    axiom qu_inv_to_nqu : ~!a -> !~a;
+    use sesh;
+    use triv;
+    use eq_to_right;
+
     x : ~!a;
-    let r = qu_inv_to_nqu(x) : !~a;
+
+    let x2 = triv(sesh) : ~!a == !~a;
+    let r = eq_to_right(x2, x) : !~a;
     return r;
 }
 
 fn nqu_to_qu_inv : !~a  ->  ~!a {
-    axiom nqu_to_qu_inv : !~a -> ~!a;
+    use sesh;
+    use triv;
+    use eq_to_left;
+
     x : !~a;
-    let r = nqu_to_qu_inv(x) : ~!a;
-    return r;
-}
 
-fn qu_eq_inv : true  ->  (~!a == !~a) {
-    use nqu_to_qu_inv;
-    use qu_inv_to_nqu;
-    use refl;
-
-    let x1 = qu_inv_to_nqu() : ~!a => !~a;
-    let x2 = nqu_to_qu_inv() : !~a => ~!a;
-    let r = refl(x1, x2) : ~!a == !~a;
+    let x2 = triv(sesh) : ~!a == !~a;
+    let r = eq_to_left(x2, x) : ~!a;
     return r;
 }
 

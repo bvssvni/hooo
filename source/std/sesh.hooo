@@ -1,0 +1,9 @@
+grade sesh_strength [sesh];
+
+fn sesh : true -> ~!a == !~a {
+    x : true;
+
+    axiom sesh : true -> ~!a == !~a;
+    let r = sesh(x) : ~!a == !~a;
+    return sesh;
+}
