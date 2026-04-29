@@ -1,0 +1,9 @@
+
+grade foo [axiom_1];
+
+fn axiom_1 : a -> a {
+    x : a;
+    axiom axiom_1 : a -> a;
+    let r = axiom_1(x) : a;
+    return r;
+}

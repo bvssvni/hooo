@@ -50,42 +50,8 @@ fn main() {
         let path = Path::new(&file);
         let mut meta_cache = MetaCache::restore(meta_store_file);
         if path.is_dir() {
-            let (tx_cycle, rx_cycle) = std::sync::mpsc::channel();
-            let (tx_grade, rx_grade) = std::sync::mpsc::channel();
-            let mut loader = match Loader::new(
-                Arc::new(file.clone()),
-                &mut meta_cache,
-                Some(tx_cycle),
-                Some(tx_grade),
-            ) {
-                Ok(x) => x,
-                Err(err) => {
-                    eprintln!("ERROR:\n{}", err);
-                    return;
-                }
-            };
-            match lib_check(&mut loader, &mut meta_cache, overwrite) {
-                Ok(()) => {
-                    // Detect cycle, if any.
-                    drop(loader);
-                    let cycle_detector = hooo::cycle_detector::CycleDetector::new(rx_cycle);
-                    if let Some(cycles) = cycle_detector.cycles() {
-                        let mut names = vec![None; cycle_detector.ids.len()];
-                        for name in cycle_detector.ids.keys() {
-                            names[*cycle_detector.ids.get(name).unwrap()] = Some(name);
-                        }
-                        eprintln!("ERROR:");
-                        eprintln!("Cycles detected:\n");
-                        for &(a, b) in &cycles {
-                            eprintln!("  {} -> {}",
-                                names[a].unwrap(), names[b].unwrap());
-                        }
-                        eprintln!("");
-                    }
-
-                    let s = hooo::grader::grade_report(rx_grade.iter(), &cycle_detector);
-                    println!("{}", s);
-                }
+            match lib_check(file, &mut meta_cache, overwrite) {
+                Ok(()) => {}
                 Err(err) => {
                     eprintln!("\nERROR:\n{}", err);
                     return;
@@ -124,7 +90,7 @@ fn main() {
 }
 
 fn lib_check(
-    loader: &mut Loader,
+    file: String,
     meta_cache: &MetaCache,
     overwrite: Option<bool>,
 ) -> Result<(), String> {
@@ -132,6 +98,15 @@ fn lib_check(
     use std::fs::File;
     use std::io::Write as OtherWrite;
     use std::sync::Mutex;
+
+    let (tx_cycle, rx_cycle) = std::sync::mpsc::channel();
+    let (tx_grade, rx_grade) = std::sync::mpsc::channel();
+    let mut loader = Loader::new(
+        Arc::new(file.clone()),
+        &meta_cache,
+        Some(tx_cycle),
+        Some(tx_grade),
+    )?;
 
     let path = Path::new(&**loader.dir).join("Hooo.config");
     let lib: Option<LibInfo> = loader.load_info(meta_cache)?;
@@ -154,7 +129,29 @@ fn lib_check(
     let error = error.lock().unwrap();
     let _ = error.as_ref().map_err(|err| err.clone())?;
 
-    let s = loader.to_library_format(&lib);
+    // Detect cycle, if any.
+    // First, drop cycle and grade check senders to terminate channels.
+    loader.cycle_check = None;
+    loader.grade_check = None;
+    let cycle_detector = hooo::cycle_detector::CycleDetector::new(&loader, rx_cycle);
+    if let Some(cycles) = cycle_detector.cycles() {
+        use std::fmt::Write;
+
+        let mut names = vec![None; cycle_detector.ids.len()];
+        for name in cycle_detector.ids.keys() {
+            names[*cycle_detector.ids.get(name).unwrap()] = Some(name);
+        }
+        let mut err = String::new();
+        writeln!(err, "Cycles detected:\n").unwrap();
+        for &(a, b) in &cycles {
+            writeln!(err, "  {} -> {}",
+                names[a].unwrap(), names[b].unwrap()).unwrap();
+        }
+        return Err(err);
+    }
+    // Generate theorem grading report.
+    let s_grade = hooo::grader::grade_report(rx_grade.iter(), &cycle_detector);
+    let s = loader.to_library_format(&lib, &s_grade);
 
     println!("");
     println!("=== New Hooo.config ===");
@@ -179,6 +176,7 @@ fn lib_check(
 
     let mut file = File::create(path).unwrap();
     file.write(s.as_bytes()).unwrap();
+
     Ok(())
 }
 

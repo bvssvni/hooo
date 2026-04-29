@@ -1,4 +1,4 @@
-_seps: ":;"
+_seps: ":;,[]"
 _ty: ";{}"
 
 200 multi_line_comment = ["/*" ..."*/"? .r?({
@@ -6,6 +6,15 @@ _ty: ";{}"
 }) "*/"]
 201 comment = {multi_line_comment ["//" ..."\n"?]}
 
+100 , = [.w? "," .w?]
+
+12 grading = [.$ .w? ":" .w? "[" .w? .s?.(, .._seps!) .w? "]" .w? ";"]
+11 grade = [.._seps! .w? ":" .w? "{" .w?
+  .l([.w? {comment grading} .w?])
+.w? "}" .w? ";"]
+10 grades = ["grades" .w! "{" .w? {
+  .l([.w? {comment grade} .w?])
+} .w? "}"]
 9 dep = {
     ["path(" .w? .t!:"dep_path" .w? ")" .w? ";"]
 }
@@ -27,6 +36,6 @@ _ty: ";{}"
     desc
     funs
     deps
+    grades
 .w? }])
 0 doc = [.w? lib:"lib" .w?]
-
