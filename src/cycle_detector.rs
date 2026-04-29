@@ -11,8 +11,15 @@ impl CycleDetector {
     /// Constructs cycle detector from receiver.
     ///
     /// Remember to drop the last sender before calling this.
-    pub fn new(rc: Receiver<(Arc<String>, Arc<String>)>) -> CycleDetector {
+    pub fn new(loader: &Loader, rc: Receiver<(Arc<String>, Arc<String>)>) -> CycleDetector {
         let mut ids = HashMap::default();
+        for fun in loader.functions.keys() {
+            if !ids.contains_key(fun) {
+                let id = ids.len();
+                ids.insert(fun.clone(), id);
+            }
+        }
+
         let mut edges = vec![];
         for (a, b) in rc.iter() {
             let a_id = if !ids.contains_key(&a) {

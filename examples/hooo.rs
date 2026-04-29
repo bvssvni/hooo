@@ -133,7 +133,7 @@ fn lib_check(
     // First, drop cycle and grade check senders to terminate channels.
     loader.cycle_check = None;
     loader.grade_check = None;
-    let cycle_detector = hooo::cycle_detector::CycleDetector::new(rx_cycle);
+    let cycle_detector = hooo::cycle_detector::CycleDetector::new(&loader, rx_cycle);
     if let Some(cycles) = cycle_detector.cycles() {
         use std::fmt::Write;
 
