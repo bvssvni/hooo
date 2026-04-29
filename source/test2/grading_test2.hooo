@@ -1,0 +1,5 @@
+fn bar : a -> a {
+    x : a;
+    use test::axiom_1;
+    return x;
+}
