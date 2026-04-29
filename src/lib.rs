@@ -1405,7 +1405,7 @@ impl Loader {
         }
     }
 
-    pub fn to_library_format(&self, lib: &Option<LibInfo>) -> String {
+    pub fn to_library_format(&self, lib: &Option<LibInfo>, s_grade: &str) -> String {
         fn json(s: &str) -> String {
             use piston_meta::json::write_string;
 
@@ -1448,6 +1448,8 @@ impl Loader {
             writeln!(s, "  {} : {};", name, ty.to_str(top, None)).unwrap();
         }
         writeln!(s, "}}").unwrap();
+
+        write!(s, "{}", s_grade).unwrap();
 
         writeln!(s, "dependencies {{").unwrap();
         if let Some(lib) = &lib {

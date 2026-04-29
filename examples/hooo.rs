@@ -129,7 +129,29 @@ fn lib_check(
     let error = error.lock().unwrap();
     let _ = error.as_ref().map_err(|err| err.clone())?;
 
-    let s = loader.to_library_format(&lib);
+    // Detect cycle, if any.
+    // First, drop cycle and grade check senders to terminate channels.
+    loader.cycle_check = None;
+    loader.grade_check = None;
+    let cycle_detector = hooo::cycle_detector::CycleDetector::new(rx_cycle);
+    if let Some(cycles) = cycle_detector.cycles() {
+        use std::fmt::Write;
+
+        let mut names = vec![None; cycle_detector.ids.len()];
+        for name in cycle_detector.ids.keys() {
+            names[*cycle_detector.ids.get(name).unwrap()] = Some(name);
+        }
+        let mut err = String::new();
+        writeln!(err, "Cycles detected:\n").unwrap();
+        for &(a, b) in &cycles {
+            writeln!(err, "  {} -> {}",
+                names[a].unwrap(), names[b].unwrap()).unwrap();
+        }
+        return Err(err);
+    }
+    // Generate theorem grading report.
+    let s_grade = hooo::grader::grade_report(rx_grade.iter(), &cycle_detector);
+    let s = loader.to_library_format(&lib, &s_grade);
 
     println!("");
     println!("=== New Hooo.config ===");
@@ -155,25 +177,6 @@ fn lib_check(
     let mut file = File::create(path).unwrap();
     file.write(s.as_bytes()).unwrap();
 
-    // Detect cycle, if any.
-    drop(loader);
-    let cycle_detector = hooo::cycle_detector::CycleDetector::new(rx_cycle);
-    if let Some(cycles) = cycle_detector.cycles() {
-        let mut names = vec![None; cycle_detector.ids.len()];
-        for name in cycle_detector.ids.keys() {
-            names[*cycle_detector.ids.get(name).unwrap()] = Some(name);
-        }
-        eprintln!("ERROR:");
-        eprintln!("Cycles detected:\n");
-        for &(a, b) in &cycles {
-            eprintln!("  {} -> {}",
-                names[a].unwrap(), names[b].unwrap());
-        }
-        eprintln!("");
-    }
-
-    let s = hooo::grader::grade_report(rx_grade.iter(), &cycle_detector);
-    println!("{}", s);
     Ok(())
 }
 
