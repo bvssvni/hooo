@@ -109,18 +109,31 @@ impl Grader {
 
             fns.sort();
             write!(s, "        {}: [", gr + 1).unwrap();
-            let mut first = true;
-            for (ns, f) in &fns {
+            let mut any: u8 = 0;
+            for (ns, _) in &fns {
                 if ns.len() != 0 {continue};
 
-                if !first {
-                    write!(s, ", ").unwrap();
-                } else {
-                    first = false;
-                }
-                write!(s, "{}", f).unwrap();
+                any = 2.min(any + 1);
+                if any == 2 {break};
             }
-            writeln!(s, "];").unwrap();
+            if any == 2 {
+                for (ns, f) in &fns {
+                    if ns.len() != 0 {continue};
+
+                    write!(s, "\n            {},", f).unwrap();
+                }
+            } else if any == 1 {
+                for (ns, f) in &fns {
+                    if ns.len() != 0 {continue};
+
+                    write!(s, "{}", f).unwrap();
+                }
+            }
+            if any == 2 {
+                writeln!(s, "\n        ];").unwrap();
+            } else {
+                writeln!(s, "];").unwrap();
+            }
         }
         writeln!(s, "    }};").unwrap();
     }
