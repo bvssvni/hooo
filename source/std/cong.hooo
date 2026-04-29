@@ -50,6 +50,27 @@ are tautological congruent but not normal congruent.
 sym cong;
 sym tauto_cong;
 
+grade congruence_strength [tauto_cong_all, cong_all];
+
+fn tauto_cong_all : true -> tauto_cong'(f) {
+    use cong_all;
+    use cong_to_tauto_cong;
+
+    x : true;
+
+    let x2 = cong_all(x) : cong'(f);
+    let r = cong_to_tauto_cong(x2) : tauto_cong'(f);
+    return r;
+}
+
+fn cong_all : true -> cong'(f) {
+    x : true;
+
+    axiom cong_all : true -> cong'(f);
+    let r = cong_all(x) : cong'(f);
+    return r;
+}
+
 // Symbol definitions.
 
 fn cong_sym_def : true -> cong' == sym(f, all(a == b -> f'(a) == f'(b))) {
