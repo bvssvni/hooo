@@ -205,10 +205,24 @@ fn tauto_cong_fun_eq : tauto_cong'(f) & tauto_cong'(g) & (f == g)^true -> f(a) =
 fn cong_eq_to_tauto_eq : sym(f, all(a == b -> f'(a) == f'(b)))(f) ->
     sym(f, all((a == b)^true -> f'(a) == f'(b)))(f)
 {
-    axiom cong_eq_to_tauto_eq : sym(f, all(a == b -> f'(a) == f'(b)))(f) ->
-        sym(f, all((a == b)^true -> f'(a) == f'(b)))(f);
     x : sym(f, all(a == b -> f'(a) == f'(b)))(f);
-    let r = cong_eq_to_tauto_eq(x) : sym(f, all((a == b)^true -> f'(a) == f'(b)))(f);
+
+    fn f : sym(f, a == b -> f'(a) == f'(b))(f) ->
+        sym(f, (a == b)^true -> f'(a) == f'(b))(f)
+    {
+        use pow_transitivity;
+        use triv;
+
+        x : sym(f, a == b -> f'(a) == f'(b))(f);
+
+        let x2 = x() : a == b -> f(a) == f(b);
+        let x3 = triv() : (a == b)^true -> (a == b);
+        let x4 = pow_transitivity(x3, x2) : (a == b)^true -> f(a) == f(b);
+        let r = x4() : sym(f, (a == b)^true -> f'(a) == f'(b))(f);
+        unsafe return r;
+    }
+
+    let r = f(x) : sym(f, all((a == b)^true -> f'(a) == f'(b)))(f);
     unsafe return r;
 }
 
