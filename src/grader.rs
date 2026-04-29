@@ -13,23 +13,42 @@ pub fn grade_report<I: Iterator<Item = (Arc<String>, Vec<Vec<Name>>, bool)>>(
     let mut s = String::new();
     writeln!(&mut s, "grades {{").unwrap();
     let mut grades: HashMap<Arc<String>, Grader> = HashMap::default();
+    let mut filter: HashMap<usize, Arc<String>> = HashMap::default();
     for (name, args, external) in iter {
-        if let Some(grader) = grades.get_mut(&name) {
+        let insert = if let Some(grader) = grades.get_mut(&name) {
             if grader.external != external {
                 eprintln!("ERROR:\nGrade `{}` is declared externally", name);
-            }
-            for (grader_args, arg) in grader.args.iter_mut().zip(args.into_iter()) {
-                grader_args.extend(arg.into_iter());
-            }
-        } else {
+                !external
+            } else if external {
+                for (grader_args, arg) in grader.args.iter_mut().zip(args.into_iter()) {
+                    grader_args.extend(arg.into_iter());
+                }
+                continue
+            } else {false}
+        } else {true};
+
+        if insert {
             let grader = Grader {name: name.clone(), args, external};
+
+            // Remember theorem gradient specified locally,
+            // so that they can be filtered out of other theorem grades.
+            if !grader.external {
+                for n in grader.args.iter() {
+                    for m in n {
+                        if let Some(id) = cycle_detector.ids.get(m) {
+                            filter.insert(*id, name.clone());
+                        }
+                    }
+                }
+            }
+
             grades.insert(name, grader);
         }
     }
     let mut grades: Vec<&Grader> = grades.values().collect();
     grades.sort_by_key(|n| &n.name);
     for grader in grades {
-        grader.report(&mut s, cycle_detector);
+        grader.report(&mut s, cycle_detector, &mut filter);
     }
     writeln!(&mut s, "}}").unwrap();
     s
@@ -56,6 +75,7 @@ impl Grader {
         &self,
         s: &mut String,
         cycle_detector: &CycleDetector,
+        filter: &mut HashMap<usize, Arc<String>>,
     ) {
         use std::fmt::Write;
 
@@ -77,6 +97,11 @@ impl Grader {
         loop {
             let mut changed = false;
             for (a, b) in &cycle_detector.edges {
+                // Filter out other locally declared theorem grading axioms.
+                if let Some(n) = filter.get(a) {
+                    if *n != self.name {continue};
+                }
+
                 let gr_a = grades.get(a);
                 let new_gr: (usize, bool) = match (gr_a, grades.get(b)) {
                     (Some((gr_a, false)), Some((gr_b, _))) => ((*gr_a).max(*gr_b), false),
