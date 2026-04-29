@@ -26,7 +26,9 @@ pub fn grade_report<I: Iterator<Item = (Arc<String>, Vec<Vec<Name>>, bool)>>(
             grades.insert(name, grader);
         }
     }
-    for grader in grades.values() {
+    let mut grades: Vec<&Grader> = grades.values().collect();
+    grades.sort_by_key(|n| &n.name);
+    for grader in grades {
         grader.report(&mut s, cycle_detector);
     }
     writeln!(&mut s, "}}").unwrap();
