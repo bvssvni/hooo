@@ -29,7 +29,7 @@ _seps: "',.(){}=-<>^&|!-□◇~"
     "~~":"q"
     ".":"comp"
 } .w? type_or_pow:"right"]
-5 pow = [typeleft:"left" .w? "^":"pow" .w? typeleft:"right"]
+5 pow = [typeleft:"left" .w? ?["^":"pow" .w? typeleft:"right"]]
 4 imply = [imply_left:"left" .w? "=>":"imply" .w? type:"right"]
 3 typeleft_or_un = {
     un:"un"
@@ -47,6 +47,7 @@ _seps: "',.(){}=-<>^&|!-□◇~"
     var:"var"
 }
 1 type = {
+    ["(" {type_or_fun typeleft} ")" .w? !":" !"." !"^" !"&" !"|" !"=>" !"==" !"("]
     imply:"bin"
     bin:"bin"
     jud:"bin"
