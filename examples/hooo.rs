@@ -26,6 +26,8 @@ Flags:
 use hooo::*;
 use hooo::meta_cache::MetaCache;
 
+use rustc_hash::FxHashSet as HashSet;
+
 use std::sync::Arc;
 use rayon::prelude::*;
 
@@ -101,15 +103,24 @@ fn lib_check(
 
     let (tx_cycle, rx_cycle) = std::sync::mpsc::channel();
     let (tx_grade, rx_grade) = std::sync::mpsc::channel();
+    let tx_grade_copy = tx_grade.clone();
     let mut loader = Loader::new(
         Arc::new(file.clone()),
-        &meta_cache,
+        meta_cache,
         Some(tx_cycle),
         Some(tx_grade),
     )?;
 
     let path = Path::new(&**loader.dir).join("Hooo.config");
     let lib: Option<LibInfo> = loader.load_info(meta_cache)?;
+
+    if let Some(lib) = &lib {
+        let ref mut sent: HashSet<Arc<String>> = HashSet::default();
+        sent.insert(lib.name.clone());
+        let dir = std::path::Path::new(&**loader.dir).into();
+        lib.send_external_unique_gradings(dir, &tx_grade_copy, sent, meta_cache);
+    }
+    drop(tx_grade_copy);
 
     let files = loader.files.clone();
 
@@ -145,7 +156,7 @@ fn lib_check(
         writeln!(err, "Cycles detected:\n").unwrap();
         for &(a, b) in &cycles {
             writeln!(err, "  {} -> {}",
-                names[a].unwrap(), names[b].unwrap()).unwrap();
+                names[a].map(|n| &n.1).unwrap(), names[b].map(|n| &n.1).unwrap()).unwrap();
         }
         return Err(err);
     }

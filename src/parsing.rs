@@ -19,6 +19,7 @@ fn parse_lib(
     let mut description: Option<Arc<String>> = None;
     let mut functions: HashMap<Arc<String>, Type> = HashMap::default();
     let mut dependencies: Vec<Dep> = vec![];
+    let mut gradings: Vec<(Arc<String>, Vec<Vec<Arc<String>>>)> = vec![];
     loop {
         if let Ok(range) = convert.end_node(node) {
             convert.update(range);
@@ -38,6 +39,21 @@ fn parse_lib(
         } else if let Ok((range, val)) = convert.meta_string("dep_path") {
             convert.update(range);
             dependencies.push(Dep::Path(val));
+        } else if let Ok((range, val)) = convert.meta_string("grade_name") {
+            convert.update(range);
+            gradings.push((val, vec![]));
+        } else if let Ok((range, _)) = convert.meta_f64("grading") {
+            convert.update(range);
+            if let Some(last) = gradings.last_mut() {
+                last.1.push(vec![]);
+            }
+        } else if let Ok((range, name)) = convert.meta_string("grade") {
+            convert.update(range);
+            if let Some(last) = gradings.last_mut() {
+                if let Some(last) = last.1.last_mut() {
+                    last.push(name);
+                }
+            }
         } else {
             let range = convert.ignore();
             convert.update(range);
@@ -49,7 +65,7 @@ fn parse_lib(
     let version = version.ok_or(())?;
     let description = description.ok_or(())?;
     let lib = LibInfo {
-        name, version, description, functions, dependencies,
+        name, version, description, functions, dependencies, gradings,
     };
     Ok((convert.subtract(start), lib))
 }
@@ -82,7 +98,8 @@ fn run_ctx(
                 convert.update(range);
                 if loader.run {
                     if let Some(tx) = loader.grade_check.as_ref() {
-                        let _ = tx.send((name, args));
+                        let args = args.into_iter().map(|n| vec![(vec![], n)]).collect();
+                        let _ = tx.send((name, args, false));
                     }
                 }
             }

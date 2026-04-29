@@ -2,8 +2,8 @@
 
 use std::sync::Arc;
 use std::sync::mpsc::Sender;
-use rustc_hash::FxHashSet as HashSet;
-use rustc_hash::FxHashMap as HashMap;
+pub(crate) use rustc_hash::FxHashSet as HashSet;
+pub(crate) use rustc_hash::FxHashMap as HashMap;
 use std::fmt;
 use std::path::Path;
 use piston_meta::Range;
@@ -1258,17 +1258,21 @@ pub struct Loader {
     pub trace: Vec<Arc<String>>,
     pub silent: bool,
     pub files: Vec<String>,
-    pub cycle_check: Option<Sender<(Arc<String>, Arc<String>)>>,
+    pub cycle_check: Option<Sender<(Arc<String>, (Vec<Arc<String>>, Arc<String>))>>,
     /// Theorem grading.
-    pub grade_check: Option<Sender<(Arc<String>, Vec<Arc<String>>)>>,
+    ///
+    /// Stores `name, arguments, external`.
+    ///
+    /// When external, the arguments are not defined.
+    pub grade_check: Option<Sender<(Arc<String>, Vec<Vec<grader::Name>>, bool)>>,
 }
 
 impl Loader {
     pub fn new(
         dir: Arc<String>,
         meta_cache: &MetaCache,
-        cycle_check: Option<Sender<(Arc<String>, Arc<String>)>>,
-        grade_check: Option<Sender<(Arc<String>, Vec<Arc<String>>)>>,
+        cycle_check: Option<Sender<(Arc<String>, (Vec<Arc<String>>, Arc<String>))>>,
+        grade_check: Option<Sender<(Arc<String>, Vec<Vec<grader::Name>>, bool)>>,
     ) -> Result<Loader, String> {
         use rayon::prelude::*;
         use std::sync::Mutex;
@@ -1287,6 +1291,11 @@ impl Loader {
         };
 
         let std = parsing::lib_str(include_str!("../source/std/Hooo.config"), meta_cache)?;
+        if let Some(tx) = loader.grade_check.as_ref() {
+            let ref mut sent: HashSet<Arc<String>> = HashSet::default();
+            let dir = std::path::Path::new(&**loader.dir).into();
+            std.send_external_unique_gradings(dir, tx, sent, meta_cache);
+        }
         loader.dependencies.push(std);
 
         let files: Vec<String> = std::fs::read_dir(&**loader.dir).unwrap()
@@ -1376,9 +1385,13 @@ impl Loader {
                 if &**tr == &**f {
                     return Err(format!("Cyclic proof, `{}` uses `{}`", tr, f));
                 }
-                if let Some(tx) = self.cycle_check.as_ref() {
-                    let _ = tx.send((self.trace[0].clone(), f.clone()));
-                }
+            }
+        }
+
+        if self.trace.len() > 0 {
+            if let Some(tx) = self.cycle_check.as_ref() {
+                let ns = if this_lib {vec![]} else {ns.into()};
+                let _ = tx.send((self.trace[0].clone(), (ns, f.clone())));
             }
         }
 
@@ -1482,6 +1495,7 @@ pub struct LibInfo {
     pub description: Arc<String>,
     pub functions: HashMap<Arc<String>, Type>,
     pub dependencies: Vec<Dep>,
+    pub gradings: Vec<(Arc<String>, Vec<Vec<Arc<String>>>)>,
 }
 
 impl LibInfo {
@@ -1497,6 +1511,38 @@ impl LibInfo {
         data_file.read_to_string(&mut data)
             .map_err(|err| format!("Could not open `{}`, {}", file, err))?;
         parsing::lib_str(&data, meta_cache)
+    }
+
+    pub fn send_external_unique_gradings(
+        &self,
+        dir: std::path::PathBuf,
+        tx: &Sender<(Arc<String>, Vec<Vec<grader::Name>>, bool)>,
+        sent: &mut HashSet<Arc<String>>,
+        meta_cache: &MetaCache,
+    ) {
+        if !sent.contains(&self.name) {
+            sent.insert(self.name.clone());
+            for (name, data) in &self.gradings {
+                let external = true;
+                let data: Vec<Vec<grader::Name>> = data.iter()
+                    .map(|n|
+                        n.iter().map(|n|
+                            (vec![self.name.clone()], n.clone())
+                        ).collect()
+                    ).collect();
+                let _ = tx.send((name.clone(), data, external));
+            }
+        }
+
+        for dep in &self.dependencies {
+            let Dep::Path(path) = dep;
+            let dep_path = dir.join(&**path).join("Hooo.config");
+            if !dep_path.exists() {continue}
+
+            if let Ok(lib) = LibInfo::from_path(&dep_path, meta_cache) {
+                lib.send_external_unique_gradings(dir.join(&**path), tx, sent, meta_cache);
+            }
+        }
     }
 }
 

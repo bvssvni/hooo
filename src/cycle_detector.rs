@@ -3,7 +3,7 @@ use crate::*;
 use std::sync::mpsc::Receiver;
 
 pub struct CycleDetector {
-    pub ids: HashMap<Arc<String>, usize>,
+    pub ids: HashMap<grader::Name, usize>,
     pub edges: Vec<(usize, usize)>,
 }
 
@@ -11,22 +11,25 @@ impl CycleDetector {
     /// Constructs cycle detector from receiver.
     ///
     /// Remember to drop the last sender before calling this.
-    pub fn new(loader: &Loader, rc: Receiver<(Arc<String>, Arc<String>)>) -> CycleDetector {
+    pub fn new(
+        loader: &Loader,
+        rc: Receiver<(Arc<String>, grader::Name)>
+    ) -> CycleDetector {
         let mut ids = HashMap::default();
         for fun in loader.functions.keys() {
-            if !ids.contains_key(fun) {
+            if !ids.contains_key(&(vec![], fun.clone())) {
                 let id = ids.len();
-                ids.insert(fun.clone(), id);
+                ids.insert((vec![], fun.clone()), id);
             }
         }
 
         let mut edges = vec![];
         for (a, b) in rc.iter() {
-            let a_id = if !ids.contains_key(&a) {
+            let a_id = if !ids.contains_key(&(vec![], a.clone())) {
                 let id = ids.len();
-                ids.insert(a, id);
+                ids.insert((vec![], a.clone()), id);
                 id
-            } else {*ids.get(&a).unwrap()};
+            } else {*ids.get(&(vec![], a.clone())).unwrap()};
             let b_id = if !ids.contains_key(&b) {
                 let id = ids.len();
                 ids.insert(b, id);
