@@ -51,6 +51,7 @@ sym cong;
 sym tauto_cong;
 
 grade congruence_strength [tauto_cong_all, cong_all];
+grade congruence_application_strength [cong_app];
 
 fn tauto_cong_all : true -> tauto_cong'(f) {
     use cong_all;
