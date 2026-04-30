@@ -102,6 +102,7 @@ fn run_ctx(
                         let _ = tx.send((name, args, false));
                     }
                 }
+                continue
             }
             Err(Some(err)) => return Err((start_range, err)),
             Err(None) => {}
