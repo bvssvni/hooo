@@ -31,6 +31,24 @@ fn sd_symmetry : sd(a, b) -> sd(b, a) {
     return r;
 }
 
+fn sd_eq_symmetry : true -> sd(a, b) == sd(b, a) {
+    use sd_symmetry;
+    use refl;
+
+    lam f1 : sd(a, b) => sd(b, a) {
+        x : sd(a, b);
+        let r = sd_symmetry(x) : sd(b, a);
+        return r;
+    }
+    lam f2 : sd(b, a) => sd(a, b) {
+        x : sd(b, a);
+        let r = sd_symmetry(x) : sd(a, b);
+        return r;
+    }
+    let r = refl(f1, f2) : sd(a, b) == sd(b, a);
+    return r;
+}
+
 fn sd_conv_eq_from : sd'(a, b) == sd'(c, d) -> sd(a, b) == sd(c, d) {
     use eq_transitivity;
     use eq_transitivity_rev_sym;
