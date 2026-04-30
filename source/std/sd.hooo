@@ -106,17 +106,18 @@ fn sd_conv_to : sd(a, b) -> sd'(a, b) {
 }
 
 fn sd_eq_left : (a == b)^true -> sd(a, c) == sd(b, c) {
-    use sd_conv_eq_from;
-    use sd_tauto_cong;
-    use sd_ty;
-    use tauto_cong_eq_left;
+    use eq_transitivity;
+    use sd_eq_right;
+    use sd_eq_symmetry;
     use triv;
 
     x : (a == b)^true;
 
-    let y = triv(sd_ty) : (sd' : prop' => prop' => prop');
-    let x2 = tauto_cong_eq_left(sd_tauto_cong, y, x) : sd'(a, c) == sd'(b, c);
-    let r = sd_conv_eq_from(x2) : sd(a, c) == sd(b, c);
+    let x2 = sd_eq_right(x) : sd(c, a) == sd(c, b);
+    let x3 = triv(sd_eq_symmetry) : sd(a, c) == sd(c, a);
+    let x4 = triv(sd_eq_symmetry) : sd(c, b) == sd(b, c);
+    let x5 = eq_transitivity(x3, x2) : sd(a, c) == sd(c, b);
+    let r = eq_transitivity(x5, x4) : sd(a, c) == sd(b, c);
     return r;
 }
 
