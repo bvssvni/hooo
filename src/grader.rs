@@ -118,6 +118,8 @@ impl Grader {
             if !changed {break}
         }
 
+        if grades.len() == 0 {return}
+
         writeln!(s, "    {}: {{", self.name).unwrap();
         for gr in 0..self.args.len() {
             let mut fns: Vec<Name> = vec![];
