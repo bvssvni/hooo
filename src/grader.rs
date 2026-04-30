@@ -118,7 +118,22 @@ impl Grader {
             if !changed {break}
         }
 
+        // Don't output empty theorem grading.
         if grades.len() == 0 {return}
+        let mut any = false;
+        'outer: for gr in 0..self.args.len() {
+            for (gr_key, (gr_val, _)) in &grades {
+                if *gr_val == gr {
+                    for (name, id) in &cycle_detector.ids {
+                        if id == gr_key && name.0.len() == 0 {
+                            any = true;
+                            break 'outer;
+                        }
+                    }
+                }
+            }
+        }
+        if !any {return}
 
         writeln!(s, "    {}: {{", self.name).unwrap();
         for gr in 0..self.args.len() {
