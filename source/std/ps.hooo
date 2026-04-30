@@ -1,4 +1,4 @@
-grade ps_core [ps_core];
+grade ps_core_strength [ps_core];
 
 use pord;
 
