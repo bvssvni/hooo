@@ -196,6 +196,18 @@ fn sd_tauto_eq_to_sd_refl_left : sd(a, b) & (a == b)^true -> sd(a, a) {
     return r;
 }
 
+fn sd_tauto_eq_to_sd_refl_right : sd(a, b) & (a == b)^true -> sd(b, b) {
+    use sd_eq_left;
+    use eq_to_right;
+
+    x : sd(a, b);
+    y : (a == b)^true;
+
+    let z = sd_eq_left(y) : sd(a, b) == sd(b, b);
+    let r = eq_to_right(z, x) : sd(b, b);
+    return r;
+}
+
 fn sd_to_q : sd(a, a)  ->  a ~~ a {
     use eq_refl;
     use q_lift;
